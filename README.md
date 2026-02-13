@@ -64,13 +64,13 @@
 ### GitHub Pages (온라인)
 별도 설치 없이 브라우저에서 바로 사용할 수 있습니다:
 
-👉 **[Live Demo](https://<your-username>.github.io/linear-algebra-visualizer/)**
+👉 **[Live Demo](https://talaria-02.github.io/linear-algebra-visualizer/)**
 
 > ⬆️ 레포지토리 Settings → Pages → Source를 `main` 브랜치로 설정하면 위 링크가 활성화됩니다.
 
 ### 로컬 실행
 ```bash
-git clone https://github.com/<your-username>/linear-algebra-visualizer.git
+git clone https://github.com/talaria-02/linear-algebra-visualizer.git
 cd linear-algebra-visualizer
 # index.html을 브라우저에서 열기만 하면 됩니다
 start index.html     # Windows
