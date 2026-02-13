@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>행렬 공간 변환 시각화</title>
+    <meta name="description" content="2x2 행렬이 2D 공간을 어떻게 변환하는지 인터랙티브하게 시각화합니다.">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0f0f1a;
+            --bg-secondary: #1a1a2e;
+            --bg-card: #16213e;
+            --bg-input: #0a0a14;
+            --accent-blue: #4361ee;
+            --accent-cyan: #00d4ff;
+            --accent-pink: #f72585;
+            --accent-green: #06d6a0;
+            --accent-orange: #ff6d00;
+            --accent-purple: #7b2ff7;
+            --accent-yellow: #ffd60a;
+            --text-primary: #e8e8f0;
+            --text-secondary: #8888a8;
+            --text-muted: #555570;
+            --border: #2a2a45;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            --radius: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .app-header {
+            text-align: center;
+            padding: 28px 20px 12px;
+        }
+
+        .app-header h1 {
+            font-size: 1.7rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 4px;
+        }
+
+        .app-header p {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .app-layout {
+            display: flex;
+            gap: 16px;
+            padding: 12px 20px 20px;
+            max-width: 1480px;
+            margin: 0 auto;
+            align-items: flex-start;
+        }
+
+        .sidebar {
+            width: 310px;
+            min-width: 310px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 2px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .card-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .card-title .icon {
+            font-size: 1rem;
+        }
+
+        .matrix-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 12px;
+            position: relative;
+            padding: 0 14px;
+        }
+
+        .matrix-grid::before,
+        .matrix-grid::after {
+            content: '';
+            position: absolute;
+            top: -4px;
+            bottom: -4px;
+            width: 3px;
+            background: var(--accent-blue);
+            border-radius: 2px;
+        }
+
+        .matrix-grid::before {
+            left: 0;
+        }
+
+        .matrix-grid::after {
+            right: 0;
+        }
+
+        .matrix-input {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            text-align: center;
+            padding: 10px 6px;
+            outline: none;
+            transition: all 0.25s ease;
+            width: 100%;
+        }
+
+        .matrix-input:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 12px rgba(0, 212, 255, 0.2);
+        }
+
+        .matrix-labels {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 4px;
+            padding: 0 14px;
+        }
+
+        .matrix-labels span {
+            text-align: center;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 9px 14px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(67, 97, 238, 0.4);
+        }
+
+        .btn-reset {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-reset:hover {
+            border-color: var(--accent-pink);
+            color: var(--accent-pink);
+        }
+
+        .presets-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .preset-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 500;
+            padding: 8px 6px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-align: center;
+        }
+
+        .preset-btn:hover {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 212, 255, 0.08);
+            transform: translateY(-1px);
+        }
+
+        .preset-btn .preset-name {
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .preset-btn .preset-matrix {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+
+        .canvas-container {
+            flex: 1;
+            min-width: 0;
+            position: relative;
+        }
+
+        canvas {
+            width: 100%;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            background: var(--bg-primary);
+            box-shadow: var(--shadow);
+            cursor: grab;
+        }
+
+        canvas:active {
+            cursor: grabbing;
+        }
+
+        .canvas-hint {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(22, 33, 62, 0.9);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 14px;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            pointer-events: none;
+            backdrop-filter: blur(8px);
+            white-space: nowrap;
+        }
+
+        .info-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .info-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 0.75rem;
+        }
+
+        .info-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .dot-i {
+            background: var(--accent-cyan);
+        }
+
+        .dot-j {
+            background: var(--accent-pink);
+        }
+
+        .dot-det {
+            background: var(--accent-green);
+        }
+
+        .det-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .speed-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            outline: none;
+        }
+
+        .speed-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            cursor: pointer;
+            box-shadow: 0 0 6px rgba(0, 212, 255, 0.4);
+        }
+
+        .speed-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            min-width: 36px;
+        }
+
+        .shape-toggle {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 8px;
+        }
+
+        .shape-btn {
+            flex: 1;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .shape-btn.active {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        /* ─── Vector Input Section ─── */
+        .vector-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
+        }
+
+        .vector-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 8px;
+            transition: all 0.2s;
+        }
+
+        .vector-color-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .vector-inputs {
+            display: flex;
+            gap: 4px;
+            flex: 1;
+        }
+
+        .vector-coord {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 5px 4px;
+            outline: none;
+            width: 60px;
+            transition: border-color 0.2s;
+        }
+
+        .vector-coord:focus {
+            border-color: var(--accent-cyan);
+        }
+
+        .vector-result {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            min-width: 70px;
+            text-align: center;
+        }
+
+        .vector-remove {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0 2px;
+            transition: color 0.2s;
+            line-height: 1;
+        }
+
+        .vector-remove:hover {
+            color: var(--accent-pink);
+        }
+
+        .btn-add-vector {
+            background: var(--bg-secondary);
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8rem;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 6px;
+            width: 100%;
+        }
+
+        .btn-add-vector:hover {
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        @media (max-width: 900px) {
+            .app-layout {
+                flex-direction: column;
+                padding: 10px;
+            }
+
+            .sidebar {
+                width: 100%;
+                min-width: unset;
+                max-height: unset;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="app-header">
+        <h1>행렬 공간 변환 시각화</h1>
+        <p>2×2 행렬이 2D 공간을 어떻게 변환하는지 직관적으로 확인하세요</p>
+    </header>
+
+    <div class="app-layout">
+        <aside class="sidebar">
+            <!-- Matrix Input -->
+            <div class="card">
+                <div class="card-title"><span class="icon">📐</span> 변환 행렬</div>
+                <div class="matrix-labels"><span>a</span><span>b</span></div>
+                <div class="matrix-grid">
+                    <input type="number" class="matrix-input" id="m-a" value="1" step="0.1">
+                    <input type="number" class="matrix-input" id="m-b" value="0" step="0.1">
+                    <input type="number" class="matrix-input" id="m-c" value="0" step="0.1">
+                    <input type="number" class="matrix-input" id="m-d" value="1" step="0.1">
+                </div>
+                <div class="matrix-labels"><span>c</span><span>d</span></div>
+                <div class="btn-row" style="margin-top: 10px;">
+                    <button class="btn btn-primary" id="btn-apply">▶ 변환 적용</button>
+                    <button class="btn btn-reset" id="btn-reset">↺ 초기화</button>
+                </div>
+                <div class="speed-control" style="margin-top:8px;">
+                    <span class="speed-label">속도</span>
+                    <input type="range" class="speed-slider" id="speed" min="0.5" max="3" step="0.1" value="1.2">
+                    <span class="speed-label" id="speed-val">1.2×</span>
+                </div>
+            </div>
+
+            <!-- Vector Input -->
+            <div class="card">
+                <div class="card-title"><span class="icon">➡️</span> 벡터 입력</div>
+                <div class="vector-list" id="vector-list"></div>
+                <button class="btn-add-vector" id="btn-add-vector">+ 벡터 추가</button>
+            </div>
+
+            <!-- Shape Selection -->
+            <div class="card">
+                <div class="card-title"><span class="icon">🔷</span> 표시 도형</div>
+                <div class="shape-toggle">
+                    <button class="shape-btn active" data-shape="grid">격자</button>
+                    <button class="shape-btn" data-shape="circle">원</button>
+                    <button class="shape-btn" data-shape="square">사각형</button>
+                    <button class="shape-btn" data-shape="house">집 모양</button>
+                </div>
+            </div>
+
+            <!-- Presets -->
+            <div class="card">
+                <div class="card-title"><span class="icon">⚡</span> 프리셋 행렬</div>
+                <div class="presets-grid">
+                    <button class="preset-btn" data-a="0" data-b="-1" data-c="1" data-d="0">
+                        <span class="preset-name">90° 회전</span>
+                        <span class="preset-matrix">[0 -1 / 1 0]</span>
+                    </button>
+                    <button class="preset-btn" data-a="-1" data-b="0" data-c="0" data-d="1">
+                        <span class="preset-name">Y축 반사</span>
+                        <span class="preset-matrix">[-1 0 / 0 1]</span>
+                    </button>
+                    <button class="preset-btn" data-a="2" data-b="0" data-c="0" data-d="2">
+                        <span class="preset-name">2배 확대</span>
+                        <span class="preset-matrix">[2 0 / 0 2]</span>
+                    </button>
+                    <button class="preset-btn" data-a="0.5" data-b="0" data-c="0" data-d="0.5">
+                        <span class="preset-name">0.5배 축소</span>
+                        <span class="preset-matrix">[.5 0 / 0 .5]</span>
+                    </button>
+                    <button class="preset-btn" data-a="1" data-b="1" data-c="0" data-d="1">
+                        <span class="preset-name">X 전단</span>
+                        <span class="preset-matrix">[1 1 / 0 1]</span>
+                    </button>
+                    <button class="preset-btn" data-a="1" data-b="0" data-c="1" data-d="1">
+                        <span class="preset-name">Y 전단</span>
+                        <span class="preset-matrix">[1 0 / 1 1]</span>
+                    </button>
+                    <button class="preset-btn" data-a="0.707" data-b="-0.707" data-c="0.707" data-d="0.707">
+                        <span class="preset-name">45° 회전</span>
+                        <span class="preset-matrix">[.71 -.71 / .71 .71]</span>
+                    </button>
+                    <button class="preset-btn" data-a="0" data-b="1" data-c="1" data-d="0">
+                        <span class="preset-name">X↔Y 교환</span>
+                        <span class="preset-matrix">[0 1 / 1 0]</span>
+                    </button>
+                    <button class="preset-btn" data-a="1" data-b="0" data-c="0" data-d="-1">
+                        <span class="preset-name">X축 반사</span>
+                        <span class="preset-matrix">[1 0 / 0 -1]</span>
+                    </button>
+                    <button class="preset-btn" data-a="0" data-b="0" data-c="0" data-d="0">
+                        <span class="preset-name">영행렬</span>
+                        <span class="preset-matrix">[0 0 / 0 0]</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Info -->
+            <div class="info-row">
+                <div class="info-badge"><span class="info-dot dot-i"></span><span>î</span></div>
+                <div class="info-badge"><span class="info-dot dot-j"></span><span>ĵ</span></div>
+                <div class="info-badge" style="flex:1;">
+                    <span class="info-dot dot-det"></span>
+                    <span>det = <span class="det-value" id="det-val">1.00</span></span>
+                </div>
+            </div>
+        </aside>
+
+        <div class="canvas-container">
+            <canvas id="canvas"></canvas>
+            <div class="canvas-hint">🖱️ 드래그: 이동 · 스크롤: 줌 · 더블클릭: 중심 복귀</div>
+        </div>
+    </div>
+
+    <script>
+        (() => {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            let W, H, dpr;
+
+            // ─── View State (pan & zoom) ───
+            let viewOffsetX = 0;   // in pixels (screen space)
+            let viewOffsetY = 0;
+            let viewScale = 1;     // 1 = default (5 units visible each side)
+            const BASE_SCALE_FACTOR = 10; // canvas width / BASE_SCALE_FACTOR = 1 unit at zoom=1
+
+            function unitToPixels() {
+                return (W / dpr / BASE_SCALE_FACTOR) * viewScale;
+            }
+
+            function toScreen(x, y) {
+                const s = unitToPixels();
+                return [
+                    (W / dpr) / 2 + viewOffsetX + x * s,
+                    (H / dpr) / 2 + viewOffsetY - y * s
+                ];
+            }
+
+            function toWorld(sx, sy) {
+                const s = unitToPixels();
+                return [
+                    (sx - (W / dpr) / 2 - viewOffsetX) / s,
+                    -((sy - (H / dpr) / 2 - viewOffsetY) / s)
+                ];
+            }
+
+            function resize() {
+                const container = canvas.parentElement;
+                const rect = container.getBoundingClientRect();
+                const size = Math.min(rect.width, window.innerHeight - 120);
+                canvas.style.width = size + 'px';
+                canvas.style.height = size + 'px';
+                dpr = window.devicePixelRatio || 1;
+                W = canvas.width = size * dpr;
+                H = canvas.height = size * dpr;
+            }
+
+            window.addEventListener('resize', resize);
+            resize();
+
+            // ─── Pan & Zoom ───
+            let isDragging = false;
+            let dragStartX, dragStartY, dragOffX, dragOffY;
+
+            canvas.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                dragStartX = e.offsetX;
+                dragStartY = e.offsetY;
+                dragOffX = viewOffsetX;
+                dragOffY = viewOffsetY;
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                viewOffsetX = dragOffX + (e.offsetX - dragStartX);
+                viewOffsetY = dragOffY + (e.offsetY - dragStartY);
+            });
+
+            canvas.addEventListener('mouseup', () => { isDragging = false; });
+            canvas.addEventListener('mouseleave', () => { isDragging = false; });
+
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+                const mouseX = e.offsetX;
+                const mouseY = e.offsetY;
+
+                // Zoom towards cursor
+                const [wx, wy] = toWorld(mouseX, mouseY);
+                viewScale *= zoomFactor;
+                viewScale = Math.max(0.15, Math.min(viewScale, 20));
+                const [newSx, newSy] = toScreen(wx, wy);
+                viewOffsetX += mouseX - newSx;
+                viewOffsetY += mouseY - newSy;
+            }, { passive: false });
+
+            canvas.addEventListener('dblclick', () => {
+                viewOffsetX = 0;
+                viewOffsetY = 0;
+                viewScale = 1;
+            });
+
+            // ─── Matrix State ───
+            let currentMatrix = { a: 1, b: 0, c: 0, d: 1 };
+            let targetMatrix = { a: 1, b: 0, c: 0, d: 1 };
+            let animating = false;
+            let animProgress = 1;
+            let animSpeed = 1.2;
+            let activeShape = 'grid';
+
+            const mA = document.getElementById('m-a');
+            const mB = document.getElementById('m-b');
+            const mC = document.getElementById('m-c');
+            const mD = document.getElementById('m-d');
+
+            function getInputMatrix() {
+                return {
+                    a: parseFloat(mA.value) || 0,
+                    b: parseFloat(mB.value) || 0,
+                    c: parseFloat(mC.value) || 0,
+                    d: parseFloat(mD.value) || 0,
+                };
+            }
+
+            function setInputMatrix(a, b, c, d) {
+                mA.value = a; mB.value = b; mC.value = c; mD.value = d;
+            }
+
+            function lerpMatrix(from, to, t) {
+                const et = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+                return {
+                    a: from.a + (to.a - from.a) * et,
+                    b: from.b + (to.b - from.b) * et,
+                    c: from.c + (to.c - from.c) * et,
+                    d: from.d + (to.d - from.d) * et,
+                };
+            }
+
+            function transformPoint(x, y, m) {
+                return [m.a * x + m.b * y, m.c * x + m.d * y];
+            }
+
+            // ─── Custom Vectors ───
+            const VECTOR_COLORS = [
+                '#ffd60a', '#06d6a0', '#ff6d00', '#a855f7',
+                '#3b82f6', '#ec4899', '#14b8a6', '#f97316',
+                '#8b5cf6', '#10b981', '#ef4444', '#6366f1'
+            ];
+            let vectors = [];
+            let vectorIdCounter = 0;
+
+            function addVector(x = 1, y = 1) {
+                const id = vectorIdCounter++;
+                const color = VECTOR_COLORS[vectors.length % VECTOR_COLORS.length];
+                vectors.push({ id, x, y, color });
+                renderVectorList();
+            }
+
+            function removeVector(id) {
+                vectors = vectors.filter(v => v.id !== id);
+                renderVectorList();
+            }
+
+            function renderVectorList() {
+                const list = document.getElementById('vector-list');
+                list.innerHTML = '';
+                const m = animating ? lerpMatrix(currentMatrix, targetMatrix, animProgress) : targetMatrix;
+
+                vectors.forEach(v => {
+                    const [tx, ty] = transformPoint(v.x, v.y, m);
+                    const item = document.createElement('div');
+                    item.className = 'vector-item';
+                    item.innerHTML = `
+        <span class="vector-color-dot" style="background:${v.color}"></span>
+        <div class="vector-inputs">
+          <input type="number" class="vector-coord" value="${v.x}" step="0.5" data-id="${v.id}" data-axis="x">
+          <input type="number" class="vector-coord" value="${v.y}" step="0.5" data-id="${v.id}" data-axis="y">
+        </div>
+        <span class="vector-result">→ (${tx.toFixed(1)}, ${ty.toFixed(1)})</span>
+        <button class="vector-remove" data-id="${v.id}">✕</button>
+      `;
+                    list.appendChild(item);
+                });
+
+                // Bind events
+                list.querySelectorAll('.vector-coord').forEach(input => {
+                    input.addEventListener('input', () => {
+                        const id = parseInt(input.dataset.id);
+                        const axis = input.dataset.axis;
+                        const vec = vectors.find(v => v.id === id);
+                        if (vec) vec[axis] = parseFloat(input.value) || 0;
+                    });
+                });
+
+                list.querySelectorAll('.vector-remove').forEach(btn => {
+                    btn.addEventListener('click', () => removeVector(parseInt(btn.dataset.id)));
+                });
+            }
+
+            document.getElementById('btn-add-vector').addEventListener('click', () => addVector());
+
+            // Add some default vectors
+            addVector(2, 1);
+            addVector(-1, 2);
+
+            // ─── Drawing ───
+            function drawLine(x1, y1, x2, y2, color, width = 1) {
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = width;
+                ctx.stroke();
+            }
+
+            function drawArrow(x1, y1, x2, y2, color, width = 2.5) {
+                const dx = x2 - x1, dy = y2 - y1;
+                const len = Math.sqrt(dx * dx + dy * dy);
+                if (len < 2) return;
+
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = width;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+
+                const angle = Math.atan2(dy, dx);
+                const headLen = Math.min(10, len * 0.3);
+                ctx.beginPath();
+                ctx.moveTo(x2, y2);
+                ctx.lineTo(x2 - headLen * Math.cos(angle - 0.4), y2 - headLen * Math.sin(angle - 0.4));
+                ctx.lineTo(x2 - headLen * Math.cos(angle + 0.4), y2 - headLen * Math.sin(angle + 0.4));
+                ctx.closePath();
+                ctx.fillStyle = color;
+                ctx.fill();
+            }
+
+            function drawDashedArrow(x1, y1, x2, y2, color, width = 1.5) {
+                const dx = x2 - x1, dy = y2 - y1;
+                const len = Math.sqrt(dx * dx + dy * dy);
+                if (len < 2) return;
+
+                ctx.beginPath();
+                ctx.setLineDash([5, 4]);
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = width;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                const angle = Math.atan2(dy, dx);
+                const headLen = Math.min(8, len * 0.25);
+                ctx.beginPath();
+                ctx.moveTo(x2, y2);
+                ctx.lineTo(x2 - headLen * Math.cos(angle - 0.4), y2 - headLen * Math.sin(angle - 0.4));
+                ctx.lineTo(x2 - headLen * Math.cos(angle + 0.4), y2 - headLen * Math.sin(angle + 0.4));
+                ctx.closePath();
+                ctx.fillStyle = color;
+                ctx.globalAlpha = 0.5;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+
+            function getVisibleRange() {
+                const corners = [
+                    toWorld(0, 0),
+                    toWorld(W / dpr, 0),
+                    toWorld(W / dpr, H / dpr),
+                    toWorld(0, H / dpr),
+                ];
+                const minX = Math.floor(Math.min(...corners.map(c => c[0]))) - 1;
+                const maxX = Math.ceil(Math.max(...corners.map(c => c[0]))) + 1;
+                const minY = Math.floor(Math.min(...corners.map(c => c[1]))) - 1;
+                const maxY = Math.ceil(Math.max(...corners.map(c => c[1]))) + 1;
+                return { minX, maxX, minY, maxY };
+            }
+
+            function drawBackgroundGrid() {
+                const { minX, maxX, minY, maxY } = getVisibleRange();
+
+                for (let i = minX; i <= maxX; i++) {
+                    const [sx, sy] = toScreen(i, minY);
+                    const [ex, ey] = toScreen(i, maxY);
+                    drawLine(sx, sy, ex, ey, i === 0 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.04)', i === 0 ? 1.5 : 0.5);
+                }
+                for (let j = minY; j <= maxY; j++) {
+                    const [sx, sy] = toScreen(minX, j);
+                    const [ex, ey] = toScreen(maxX, j);
+                    drawLine(sx, sy, ex, ey, j === 0 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.04)', j === 0 ? 1.5 : 0.5);
+                }
+
+                // Axis labels (only if scale allows readable labels)
+                const s = unitToPixels();
+                if (s > 18) {
+                    ctx.font = `${Math.min(11, s * 0.22)}px JetBrains Mono, monospace`;
+                    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+                    ctx.textAlign = 'center';
+                    for (let i = minX; i <= maxX; i++) {
+                        if (i === 0) continue;
+                        const [x, y] = toScreen(i, 0);
+                        ctx.fillText(i, x, y + 14);
+                    }
+                    for (let j = minY; j <= maxY; j++) {
+                        if (j === 0) continue;
+                        const [x, y] = toScreen(0, j);
+                        ctx.fillText(j, x - 12, y + 4);
+                    }
+                }
+            }
+
+            function drawTransformedGrid(m) {
+                const { minX, maxX, minY, maxY } = getVisibleRange();
+                // We need a range big enough to cover what's visible after inverse transform
+                const range = Math.max(Math.abs(minX), Math.abs(maxX), Math.abs(minY), Math.abs(maxY), 6);
+                const color = 'rgba(67, 97, 238, 0.35)';
+
+                for (let i = -range; i <= range; i++) {
+                    ctx.beginPath();
+                    let started = false;
+                    for (let s = -range; s <= range; s += 0.15) {
+                        const [tx, ty] = transformPoint(i, s, m);
+                        const [sx, sy] = toScreen(tx, ty);
+                        if (!started) { ctx.moveTo(sx, sy); started = true; }
+                        else ctx.lineTo(sx, sy);
+                    }
+                    ctx.strokeStyle = i === 0 ? 'rgba(67,97,238,0.6)' : color;
+                    ctx.lineWidth = i === 0 ? 1.5 : 0.8;
+                    ctx.stroke();
+                }
+                for (let j = -range; j <= range; j++) {
+                    ctx.beginPath();
+                    let started = false;
+                    for (let s = -range; s <= range; s += 0.15) {
+                        const [tx, ty] = transformPoint(s, j, m);
+                        const [sx, sy] = toScreen(tx, ty);
+                        if (!started) { ctx.moveTo(sx, sy); started = true; }
+                        else ctx.lineTo(sx, sy);
+                    }
+                    ctx.strokeStyle = j === 0 ? 'rgba(67,97,238,0.6)' : color;
+                    ctx.lineWidth = j === 0 ? 1.5 : 0.8;
+                    ctx.stroke();
+                }
+            }
+
+            function drawShape(m) {
+                if (activeShape === 'grid') return;
+
+                let points = [];
+                const N = 60;
+                if (activeShape === 'circle') {
+                    for (let i = 0; i <= N; i++) {
+                        const t = (i / N) * Math.PI * 2;
+                        points.push([Math.cos(t), Math.sin(t)]);
+                    }
+                } else if (activeShape === 'square') {
+                    points = [[1, 1], [-1, 1], [-1, -1], [1, -1], [1, 1]];
+                } else if (activeShape === 'house') {
+                    points = [[-1, -1], [1, -1], [1, 0.5], [0, 1.5], [-1, 0.5], [-1, -1]];
+                }
+
+                // Original (dashed)
+                ctx.beginPath();
+                points.forEach((p, i) => {
+                    const [sx, sy] = toScreen(p[0], p[1]);
+                    i === 0 ? ctx.moveTo(sx, sy) : ctx.lineTo(sx, sy);
+                });
+                ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([4, 4]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = 'rgba(255,255,255,0.03)';
+                ctx.fill();
+
+                // Transformed
+                ctx.beginPath();
+                points.forEach((p, i) => {
+                    const [tx, ty] = transformPoint(p[0], p[1], m);
+                    const [sx, sy] = toScreen(tx, ty);
+                    i === 0 ? ctx.moveTo(sx, sy) : ctx.lineTo(sx, sy);
+                });
+                ctx.strokeStyle = 'rgba(247, 37, 133, 0.7)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = 'rgba(247, 37, 133, 0.08)';
+                ctx.fill();
+            }
+
+            function drawBasisVectors(m) {
+                const [ox, oy] = toScreen(0, 0);
+
+                const [ix, iy] = transformPoint(1, 0, m);
+                const [isx, isy] = toScreen(ix, iy);
+                drawArrow(ox, oy, isx, isy, '#00d4ff', 3);
+
+                const [jx, jy] = transformPoint(0, 1, m);
+                const [jsx, jsy] = toScreen(jx, jy);
+                drawArrow(ox, oy, jsx, jsy, '#f72585', 3);
+
+                ctx.font = 'bold 12px Inter, sans-serif';
+                ctx.fillStyle = '#00d4ff';
+                ctx.textAlign = 'left';
+                ctx.fillText(`î (${ix.toFixed(1)}, ${iy.toFixed(1)})`, isx + 6, isy - 6);
+                ctx.fillStyle = '#f72585';
+                ctx.fillText(`ĵ (${jx.toFixed(1)}, ${jy.toFixed(1)})`, jsx + 6, jsy - 6);
+
+                ctx.beginPath();
+                ctx.arc(ox, oy, 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#fff';
+                ctx.fill();
+            }
+
+            function drawCustomVectors(m) {
+                const [ox, oy] = toScreen(0, 0);
+
+                vectors.forEach(v => {
+                    // Original vector (dashed)
+                    const [osx, osy] = toScreen(v.x, v.y);
+                    drawDashedArrow(ox, oy, osx, osy, v.color, 1.5);
+
+                    // Transformed vector (solid)
+                    const [tx, ty] = transformPoint(v.x, v.y, m);
+                    const [tsx, tsy] = toScreen(tx, ty);
+                    drawArrow(ox, oy, tsx, tsy, v.color, 2.5);
+
+                    // Dot at original position
+                    ctx.beginPath();
+                    ctx.arc(osx, osy, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = v.color;
+                    ctx.globalAlpha = 0.4;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+
+                    // Dot at transformed position
+                    ctx.beginPath();
+                    ctx.arc(tsx, tsy, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = v.color;
+                    ctx.fill();
+
+                    // Label
+                    ctx.font = 'bold 11px JetBrains Mono, monospace';
+                    ctx.fillStyle = v.color;
+                    ctx.textAlign = 'left';
+                    ctx.fillText(`(${tx.toFixed(1)}, ${ty.toFixed(1)})`, tsx + 8, tsy - 6);
+                });
+            }
+
+            function updateDeterminant(m) {
+                const det = m.a * m.d - m.b * m.c;
+                const el = document.getElementById('det-val');
+                el.textContent = det.toFixed(2);
+                el.style.color = det < 0 ? '#f72585' : det === 0 ? '#ff6d00' : '#06d6a0';
+            }
+
+            function updateVectorResults(m) {
+                const results = document.querySelectorAll('.vector-result');
+                vectors.forEach((v, i) => {
+                    if (results[i]) {
+                        const [tx, ty] = transformPoint(v.x, v.y, m);
+                        results[i].textContent = `→ (${tx.toFixed(1)}, ${ty.toFixed(1)})`;
+                    }
+                });
+            }
+
+            function draw() {
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.clearRect(0, 0, W, H);
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+                let m;
+                if (animating) {
+                    m = lerpMatrix(currentMatrix, targetMatrix, animProgress);
+                } else {
+                    m = targetMatrix;
+                }
+
+                drawBackgroundGrid();
+                drawTransformedGrid(m);
+                drawShape(m);
+                drawBasisVectors(m);
+                drawCustomVectors(m);
+                updateDeterminant(m);
+                updateVectorResults(m);
+            }
+
+            // ─── Animation Loop ───
+            let lastTime = 0;
+
+            function animate(time) {
+                if (animating) {
+                    const dt = (time - lastTime) / 1000;
+                    animProgress += dt * animSpeed;
+                    if (animProgress >= 1) {
+                        animProgress = 1;
+                        animating = false;
+                        currentMatrix = { ...targetMatrix };
+                        renderVectorList(); // update result values
+                    }
+                }
+                lastTime = time;
+                draw();
+                requestAnimationFrame(animate);
+            }
+
+            requestAnimationFrame(animate);
+
+            // ─── Event Handlers ───
+            function startTransform(target) {
+                currentMatrix = animating ? lerpMatrix(currentMatrix, targetMatrix, animProgress) : { ...targetMatrix };
+                targetMatrix = target;
+                animProgress = 0;
+                animating = true;
+            }
+
+            document.getElementById('btn-apply').addEventListener('click', () => {
+                startTransform(getInputMatrix());
+            });
+
+            document.getElementById('btn-reset').addEventListener('click', () => {
+                setInputMatrix(1, 0, 0, 1);
+                startTransform({ a: 1, b: 0, c: 0, d: 1 });
+            });
+
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const a = parseFloat(btn.dataset.a);
+                    const b = parseFloat(btn.dataset.b);
+                    const c = parseFloat(btn.dataset.c);
+                    const d = parseFloat(btn.dataset.d);
+                    setInputMatrix(a, b, c, d);
+                    startTransform({ a, b, c, d });
+                });
+            });
+
+            document.querySelectorAll('.shape-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    activeShape = btn.dataset.shape;
+                });
+            });
+
+            const speedSlider = document.getElementById('speed');
+            const speedVal = document.getElementById('speed-val');
+            speedSlider.addEventListener('input', () => {
+                animSpeed = parseFloat(speedSlider.value);
+                speedVal.textContent = animSpeed.toFixed(1) + '×';
+            });
+
+            [mA, mB, mC, mD].forEach(input => {
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') document.getElementById('btn-apply').click();
+                });
+            });
+        })();
+    </script>
+</body>
+
+</html>
